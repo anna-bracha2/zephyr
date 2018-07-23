@@ -9,6 +9,7 @@
 #include <logging/log_backend.h>
 #include <logging/log_ctrl.h>
 #include <logging/log_output.h>
+#include <logging/log_frontend.h>
 #include <misc/printk.h>
 #include <assert.h>
 #include <stdio.h>
@@ -17,13 +18,14 @@
 #define CONFIG_LOG_PRINTK_MAX_STRING_LENGTH 1
 #endif
 
-#ifdef CONFIG_LOG_FRONTEND
-#include <logging/log_frontend.h>
-#endif
-
 #ifdef CONFIG_LOG_BACKEND_UART
 #include <logging/log_backend_uart.h>
 LOG_BACKEND_UART_DEFINE(log_backend_uart);
+#endif
+
+#ifdef CONFIG_LOG_BACKEND_RAW_UART
+#include <logging/log_backend_raw_uart.h>
+LOG_BACKEND_RAW_UART_DEFINE(log_backend_raw_uart);
 #endif
 
 static struct log_list_t list;
@@ -229,6 +231,13 @@ int log_init(void)
 #ifdef CONFIG_LOG_BACKEND_UART
 	log_backend_uart_init();
 	log_backend_enable(&log_backend_uart,
+			   NULL,
+			   CONFIG_LOG_DEFAULT_LEVEL);
+#endif
+
+#ifdef CONFIG_LOG_BACKEND_RAW_UART
+	log_backend_raw_uart_init();
+	log_backend_enable(&log_backend_raw_uart,
 			   NULL,
 			   CONFIG_LOG_DEFAULT_LEVEL);
 #endif
