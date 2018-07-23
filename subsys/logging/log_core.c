@@ -9,6 +9,7 @@
 #include <logging/log_backend.h>
 #include <logging/log_ctrl.h>
 #include <logging/log_output.h>
+#include <logging/log_frontend.h>
 #include <misc/printk.h>
 #include <assert.h>
 #include <stdio.h>
@@ -20,6 +21,11 @@
 #ifdef CONFIG_LOG_BACKEND_UART
 #include <logging/log_backend_uart.h>
 LOG_BACKEND_UART_DEFINE(log_backend_uart);
+#endif
+
+#ifdef CONFIG_LOG_BACKEND_RAW_UART
+#include <logging/log_backend_raw_uart.h>
+LOG_BACKEND_RAW_UART_DEFINE(log_backend_raw_uart);
 #endif
 
 static struct log_list_t list;
@@ -46,24 +52,32 @@ static inline void msg_finalize(struct log_msg *msg,
 
 void log_0(const char *str, struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_create_0(str);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_0(str, src_level);
+	} else {
+		struct log_msg *msg = log_msg_create_0(str);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+		msg_finalize(msg, src_level);
 	}
-	msg_finalize(msg, src_level);
 }
 
 void log_1(const char *str,
 	   u32_t arg0,
 	   struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_create_1(str, arg0);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_1(str, arg0, src_level);
+	} else {
+		struct log_msg *msg = log_msg_create_1(str, arg0);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+		msg_finalize(msg, src_level);
 	}
-	msg_finalize(msg, src_level);
 }
 
 void log_2(const char *str,
@@ -71,13 +85,17 @@ void log_2(const char *str,
 	   u32_t arg1,
 	   struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_create_2(str, arg0, arg1);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_2(str, arg0, arg1, src_level);
+	} else {
+		struct log_msg *msg = log_msg_create_2(str, arg0, arg1);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+
+		msg_finalize(msg, src_level);
 	}
-
-	msg_finalize(msg, src_level);
 }
 
 void log_3(const char *str,
@@ -86,13 +104,17 @@ void log_3(const char *str,
 	   u32_t arg2,
 	   struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_create_3(str, arg0, arg1, arg2);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_3(str, arg0, arg1, arg2, src_level);
+	} else {
+		struct log_msg *msg = log_msg_create_3(str, arg0, arg1, arg2);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+
+		msg_finalize(msg, src_level);
 	}
-
-	msg_finalize(msg, src_level);
 }
 
 void log_n(const char *str,
@@ -100,26 +122,34 @@ void log_n(const char *str,
 	   u32_t narg,
 	   struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_create_n(str, args, narg);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_n(str, args, narg, src_level);
+	} else {
+		struct log_msg *msg = log_msg_create_n(str, args, narg);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+
+		msg_finalize(msg, src_level);
 	}
-
-	msg_finalize(msg, src_level);
 }
 
 void log_hexdump(const u8_t *data,
 		 u32_t length,
 		 struct log_msg_ids src_level)
 {
-	struct log_msg *msg = log_msg_hexdump_create(data, length);
+	if(IS_ENABLED(CONFIG_LOG_FRONTEND)) {
+		log_frontend_nrf_hexdump(data, length, src_level);
+	} else {
+		struct log_msg *msg = log_msg_hexdump_create(data, length);
 
-	if (msg == NULL) {
-		return;
+		if (msg == NULL) {
+			return;
+		}
+
+		msg_finalize(msg, src_level);
 	}
-
-	msg_finalize(msg, src_level);
 }
 
 int log_printk(const char *fmt, va_list ap)
@@ -194,9 +224,20 @@ int log_init(void)
 		initialized = true;
 	}
 
+#ifdef CONFIG_LOG_FRONTEND
+	log_frontend_init();
+#endif
+
 #ifdef CONFIG_LOG_BACKEND_UART
 	log_backend_uart_init();
 	log_backend_enable(&log_backend_uart,
+			   NULL,
+			   CONFIG_LOG_DEFAULT_LEVEL);
+#endif
+
+#ifdef CONFIG_LOG_BACKEND_RAW_UART
+	log_backend_raw_uart_init();
+	log_backend_enable(&log_backend_raw_uart,
 			   NULL,
 			   CONFIG_LOG_DEFAULT_LEVEL);
 #endif

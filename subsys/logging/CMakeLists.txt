@@ -16,6 +16,16 @@ zephyr_sources_ifdef(
   )
 
 zephyr_sources_ifdef(
+  CONFIG_LOG_FRONTEND
+  log_frontend.c
+  )
+
+zephyr_sources_ifdef(
   CONFIG_LOG_BACKEND_UART
   log_backend_uart.c
+  )
+  
+zephyr_sources_ifdef(
+  CONFIG_LOG_BACKEND_RAW_UART
+  log_backend_raw_uart.c
   )
